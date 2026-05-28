@@ -188,6 +188,16 @@ def init_db():
     )
     """)
 
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS pending_otps (
+       id INTEGER PRIMARY KEY,
+       email TEXT UNIQUE,
+       password TEXT,
+       otp TEXT,
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     try:
         cur.execute("ALTER TABLE expenses ADD COLUMN username TEXT")
     except:
@@ -587,17 +597,20 @@ def backup_database():
 # SIGNUP ROUTES
 @app.route("/auth/signup-step1", methods=["POST"])
 def signup_step1():
-
     data = request.get_json()
-
     email = data.get("email")
     password = data.get("password")
-
     otp = generate_otp()
 
-    session["signup_email"] = email
-    session["signup_password"] = password
-    session["signup_otp"] = otp
+    conn = sqlite3.connect("database.db")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM pending_otps WHERE email=?", (email,))
+    cur.execute(
+        "INSERT INTO pending_otps (email, password, otp) VALUES (?, ?, ?)",
+        (email, password, otp)
+    )
+    conn.commit()
+    conn.close()
 
     body = f"""
     <p>Hello,</p>
@@ -609,61 +622,43 @@ def signup_step1():
 
     try:
         if try_send_email(email, "BlueLedger — Verify Your Email", body):
-            return jsonify({
-                "success": True,
-                "message": "OTP sent to your email."
-            })
+            return jsonify({"success": True, "message": "OTP sent to your email."})
     except Exception as e:
         print("Signup Email Error:", e)
 
     if dev_email_enabled():
-        print(f"\n========== SIGNUP OTP (local dev) ==========")
+        print(f"\n========== SIGNUP OTP ==========")
         print(f"Email: {email}")
         print(f"OTP:   {otp}")
-        print(f"==========================================\n")
+        print(f"================================\n")
+        return jsonify({"success": True, "dev_otp": otp, "message": "Local mode active."})
 
-        return jsonify({
-            "success": True,
-            "dev_otp": otp,
-            "message": "Local mode active."
-        })
-
-    return jsonify({
-        "success": False,
-        "message": "Failed to send OTP email."
-    })
-
+    return jsonify({"success": False, "message": "Failed to send OTP email."})
 
 @app.route("/auth/signup-step2", methods=["POST"])
 def signup_step2():
     data = request.get_json()
     entered_otp = data.get("otp")
+    email = data.get("email")
 
-    saved_otp = session.get("signup_otp")
+    conn = sqlite3.connect("database.db")
+    cur = conn.cursor()
+    cur.execute("SELECT otp FROM pending_otps WHERE email=?", (email,))
+    record = cur.fetchone()
+    conn.close()
 
-    if not saved_otp:
-        return jsonify({
-            "success": False,
-            "message": "Session expired. Please start again."
-        })
+    if not record:
+        return jsonify({"success": False, "message": "Session expired. Please start again."})
 
-    if entered_otp != saved_otp:
-        return jsonify({
-            "success": False,
-            "message": "Invalid OTP"
-        })
-
-    email = session.get("signup_email")
+    if entered_otp != record[0]:
+        return jsonify({"success": False, "message": "Invalid OTP"})
 
     conn = sqlite3.connect("database.db")
     cur = conn.cursor()
     cur.execute("SELECT id FROM registered_users WHERE email=?", (email,))
     if cur.fetchone():
         conn.close()
-        return jsonify({
-            "success": False,
-            "message": "Email already registered"
-        })
+        return jsonify({"success": False, "message": "Email already registered"})
     conn.close()
 
     return jsonify({"success": True})
@@ -673,14 +668,18 @@ def signup_step3():
     data = request.get_json()
     username = data.get("username")
     role = data.get("role", "user")
-    email = session.get("signup_email")
-    password = session.get("signup_password")
-
-    if not email or not password:
-        return jsonify({"success": False, "message": "Session expired. Please start again."})
+    email = data.get("email")
 
     conn = sqlite3.connect("database.db")
     cur = conn.cursor()
+    cur.execute("SELECT password FROM pending_otps WHERE email=?", (email,))
+    record = cur.fetchone()
+
+    if not record:
+        conn.close()
+        return jsonify({"success": False, "message": "Session expired. Please start again."})
+
+    password = record[0]
 
     cur.execute("SELECT id FROM registered_users WHERE email=?", (email,))
     if cur.fetchone():
@@ -697,15 +696,11 @@ def signup_step3():
         "INSERT INTO registered_users (username, password, email, role) VALUES (?, ?, ?, ?)",
         (username, hashed, email, role)
     )
+    cur.execute("DELETE FROM pending_otps WHERE email=?", (email,))
     conn.commit()
     conn.close()
 
     provision_new_user(username, role)
-
-    session.pop("signup_email", None)
-    session.pop("signup_password", None)
-    session.pop("signup_otp", None)
-
     return jsonify({"success": True})
 
 @app.route("/auth/change-password", methods=["POST"])
