@@ -1,0 +1,104 @@
+<div class="chatbot-backdrop" id="chatBackdrop" onclick="closeChat()"></div>
+
+<div class="chatbot-panel" id="chatbotPanel">
+    <div class="chatbot-header">
+        <div class="chatbot-header-icon"><i class="ti ti-robot"></i></div>
+        <div class="chatbot-header-text">
+            <strong>BlueLedger AI Assistant</strong>
+            <span>Enterprise Support</span>
+        </div>
+        <div class="chatbot-live-dot"></div>
+        <button class="chatbot-close" onclick="closeChat()">
+            <i class="ti ti-x"></i>
+        </button>
+    </div>
+
+    <div class="chatbot-messages" id="chatbotMessages">
+        <div class="chatbot-msg bot">
+            <div class="chatbot-avatar"><i class="ti ti-robot"></i></div>
+            <div class="chatbot-bubble">
+                Hello! I'm your BlueLedger AI Assistant. How can I help you today?
+            </div>
+        </div>
+    </div>
+
+    <div class="chatbot-quick">
+        <button onclick="quickSend('What is AI Risk?')">
+            <i class="ti ti-shield"></i> AI Risk
+        </button>
+        <button onclick="quickSend('How does budgeting work?')">
+            <i class="ti ti-wallet"></i> Budget
+        </button>
+        <button onclick="quickSend('How to add expenses?')">
+            <i class="ti ti-receipt"></i> Expenses
+        </button>
+    </div>
+
+    <div class="chatbot-input-row">
+        <input type="text" id="chatbotInput" placeholder="Ask anything..." onkeydown="if(event.key==='Enter') chatSend()">
+        <button id="chatbotSendBtn" onclick="chatSend()">
+            <i class="ti ti-send"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+function toggleChat() {
+    var panel = document.getElementById('chatbotPanel');
+    var backdrop = document.getElementById('chatBackdrop');
+    if (panel.classList.contains('chatbot-open')) {
+        closeChat();
+    } else {
+        panel.classList.add('chatbot-open');
+        backdrop.classList.add('chatbot-open');
+    }
+}
+
+function closeChat() {
+    document.getElementById('chatbotPanel').classList.remove('chatbot-open');
+    document.getElementById('chatBackdrop').classList.remove('chatbot-open');
+}
+
+function quickSend(text) {
+    appendChatMsg('user', text);
+    setTimeout(function() {
+        fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: [{ role: 'user', content: text }] })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { appendChatMsg('bot', data.reply); });
+    }, 300);
+}
+
+function chatSend() {
+    var input = document.getElementById('chatbotInput');
+    var text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    appendChatMsg('user', text);
+    fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: text }] })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) { appendChatMsg('bot', data.reply); });
+}
+
+function appendChatMsg(role, text) {
+    var box = document.getElementById('chatbotMessages');
+    var wrap = document.createElement('div');
+    wrap.className = 'chatbot-msg ' + role;
+    if (role === 'bot') {
+        wrap.innerHTML =
+            '<div class="chatbot-avatar"><i class="ti ti-robot"></i></div>' +
+            '<div class="chatbot-bubble">' + text + '</div>';
+    } else {
+        wrap.innerHTML = '<div class="chatbot-bubble">' + text + '</div>';
+    }
+    box.appendChild(wrap);
+    box.scrollTop = box.scrollHeight;
+}
+</script>

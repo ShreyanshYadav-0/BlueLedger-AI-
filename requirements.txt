@@ -1,0 +1,11 @@
+Flask
+pandas
+numpy
+scikit-learn
+matplotlib
+reportlab
+joblib
+gunicorn
+flask-mail
+python-dotenv
+Werkzeug>=3.0

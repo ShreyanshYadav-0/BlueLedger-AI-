@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Budget Planning</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+{% include 'partials/sidebar.html' %}
+{% include 'partials/chatbot.html' %}
+<div class="main-content">
+
+    <h1>Enterprise Budget Planning 💰</h1>
+
+    <div class="glass-card">
+
+        <form method="POST">
+
+            <input 
+                type="number"
+                name="monthly_budget"
+                placeholder="Enter Monthly Budget"
+                required
+            >
+
+            <br><br>
+
+            <button type="submit" class="btn">
+                Save Budget
+            </button>
+
+        </form>
+
+    </div>
+
+    <br>
+
+    <div class="glass-card">
+
+        <h2>Current Budget</h2>
+
+        {% if budget_data %}
+            <h3>${{ budget_data[2] }}</h3>
+        {% else %}
+            <p>No budget added yet.</p>
+        {% endif %}
+
+        <br>
+
+        <h2>Total Expenses</h2>
+
+        <h3>${{ total_expenses }}</h3>
+
+        <br>
+
+        {% if budget_data and total_expenses > budget_data[2] %}
+
+            <div class="alert-box">
+
+                <h2>⚠ Overspending Alert</h2>
+
+                <p>
+                    Enterprise expenses exceeded monthly budget.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

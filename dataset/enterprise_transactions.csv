@@ -1,0 +1,40 @@
+amount,category,transaction_type,risk
+1200,Office Supplies,Normal,0
+2500,Travel,Normal,0
+3200,Food,Normal,0
+4800,Utilities,Normal,0
+5100,Software,Normal,0
+7000,Travel,Normal,0
+8500,Marketing,Normal,0
+10000,Operations,Normal,0
+12000,Vendor Payment,Normal,0
+15000,Business Expansion,Normal,0
+18000,Travel,Normal,0
+22000,Corporate Purchase,Normal,0
+25000,Equipment,Normal,0
+28000,Operations,Normal,0
+30000,Vendor Payment,Normal,0
+35000,Marketing,Normal,0
+40000,Infrastructure,Normal,0
+45000,Business Expansion,Normal,0
+52000,Unknown Transfer,High Risk,1
+60000,Foreign Transaction,High Risk,1
+70000,Suspicious Withdrawal,High Risk,1
+80000,Large Transfer,High Risk,1
+90000,Anomaly Transaction,High Risk,1
+100000,Unknown Vendor,High Risk,1
+1500,Client Services,Normal,0
+2600,Payroll,Normal,0
+3700,Cloud Services,Normal,0
+4900,Maintenance,Normal,0
+6200,Travel,Normal,0
+7100,Software Subscription,Normal,0
+8400,Insurance,Normal,0
+9700,HR Operations,Normal,0
+11000,Vendor Payment,Normal,0
+14500,Operations,Normal,0
+50000,Critical Transfer,High Risk,1
+67000,Unusual Payment,High Risk,1
+74000,External Transfer,High Risk,1
+88000,Fraud Pattern,High Risk,1
+95000,Corporate Fraud Alert,High Risk,1

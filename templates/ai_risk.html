@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+    content="width=device-width, initial-scale=1.0">
+
+    <title>AI Risk Prediction</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+{% include 'partials/sidebar.html' %}
+{% include 'partials/chatbot.html' %}
+<div class="main-content">
+
+    <div class="glass-card">
+
+        <h1>
+            ⚠ AI High Risk Monitoring
+        </h1>
+
+        <p>
+            Enterprise AI anomaly detection engine.
+        </p>
+
+        <br>
+
+        <table width="100%">
+
+            <tr>
+
+                <th>ID</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Date</th>
+                <th>Risk Status</th>
+
+            </tr>
+
+            {% for row in risks %}
+
+            <tr>
+
+                <td>{{ row[0] }}</td>
+
+                <td>${{ row[2] }}</td>
+
+                <td>{{ row[3] }}</td>
+
+                <td>{{ row[4] }}</td>
+
+                <td>
+
+                    <span class="risk-high">
+                        🔴 High Risk
+                    </span>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>

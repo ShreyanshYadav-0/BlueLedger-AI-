@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+    content="width=device-width, initial-scale=1.0">
+
+    <title>Enterprise Activity Logs</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="main-content">
+
+    <div class="glass-card">
+
+        <h1>
+            📋 Enterprise Activity Logs
+        </h1>
+
+        <p>
+            Real-time enterprise audit monitoring system.
+        </p>
+
+        <br>
+
+        <table width="100%">
+
+            <tr>
+
+                <th>ID</th>
+
+                <th>Action</th>
+
+                <th>User</th>
+
+            </tr>
+
+            {% for log in logs %}
+
+            <tr>
+
+                <td>{{ log[0] }}</td>
+
+                <td>{{ log[1] }}</td>
+
+                <td>{{ log[2] }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>

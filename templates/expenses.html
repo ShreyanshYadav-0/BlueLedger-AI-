@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Expense Management</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+{% include 'partials/sidebar.html' %}
+{% include 'partials/chatbot.html' %}
+<div class="main-content">
+
+    <h1>Enterprise Expense Management 💳</h1>
+    {% if risk_status %}
+
+<div class="risk-box">
+
+    <h2>🤖 AI Risk Analysis</h2>
+
+    <p>
+        {{ risk_status }}
+    </p>
+
+</div>
+
+{% endif %}
+
+    <div class="glass-card">
+
+        <form method="POST">
+
+            <input
+                type="number"
+                name="amount"
+                placeholder="Enter Amount"
+                required
+            >
+
+            <br><br>
+
+            <input
+                type="text"
+                name="category"
+                placeholder="Expense Category"
+                required
+            >
+
+            <br><br>
+
+            <input
+                type="date"
+                name="date"
+                required
+            >
+
+            <br><br>
+
+            <button type="submit" class="btn">
+                Add Expense
+            </button>
+
+        </form>
+
+    </div>
+
+    <br>
+
+    <div class="glass-card">
+
+        <h2>Expense Records</h2>
+
+        <table width="100%">
+
+            <tr>
+                <th>ID</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Date</th>
+            </tr>
+
+            {% for expense in data %}
+
+            <tr>
+
+                <td>{{ expense[0] }}</td>
+                <td>${{ expense[2] }}</td>
+                <td>{{ expense[3] }}</td>
+                <td>{{ expense[4] }}</td>
+                <td>
+
+{% if expense[5] and "High Risk" in expense[5] %}
+
+    <span class="risk-high">
+        🔴 High Risk
+    </span>
+
+{% elif expense[5] and "Medium Risk" in expense[5] %}
+
+    <span class="risk-medium">
+        🟡 Medium Risk
+    </span>
+
+{% else %}
+
+    <span class="risk-low">
+        🟢 Low Risk
+    </span>
+
+{% endif %}
+
+</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>

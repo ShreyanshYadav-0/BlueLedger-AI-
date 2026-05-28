@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+    content="width=device-width, initial-scale=1.0">
+
+    <title>Enterprise Backups</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="main-content">
+
+    <div class="glass-card">
+
+        <h1>
+            💾 Enterprise Backup Monitoring
+        </h1>
+
+        <p>
+            Automated enterprise database backup management.
+        </p>
+
+        <br>
+
+        <table width="100%">
+
+            <tr>
+
+                <th>Backup Files</th>
+
+            </tr>
+
+            {% for file in files %}
+
+            <tr>
+
+                <td>{{ file }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>

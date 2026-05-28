@@ -1,0 +1,65 @@
+<div class="sidebar">
+    <div class="logo">BlueLedger AI</div>
+
+    <ul class="nav-links">
+        <li>
+            <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">
+                <i class="ti ti-layout-dashboard"></i> Dashboard
+            </a>
+        </li>
+        <li>
+            <a href="/expenses" class="{% if request.path == '/expenses' %}active{% endif %}">
+                <i class="ti ti-receipt"></i> Expenses
+            </a>
+        </li>
+        <li>
+            <a href="/budget" class="{% if request.path == '/budget' %}active{% endif %}">
+                <i class="ti ti-wallet"></i> Budget
+            </a>
+        </li>
+        <li>
+            <a href="/analytics" class="{% if request.path == '/analytics' %}active{% endif %}">
+                <i class="ti ti-chart-bar"></i> Analytics
+            </a>
+        </li>
+        <li>
+            <a href="/ai-risk" class="{% if request.path == '/ai-risk' %}active{% endif %}">
+                <i class="ti ti-shield-check"></i> AI Risk
+            </a>
+        </li>
+        <li>
+            <a href="/report" class="{% if request.path == '/report' %}active{% endif %}">
+                <i class="ti ti-file-report"></i> Reports
+            </a>
+        </li>
+        {% if session.get('role') == 'manager' %}
+        <li>
+            <a href="/logs" class="{% if request.path == '/logs' %}active{% endif %}">
+                <i class="ti ti-activity"></i> Logs
+            </a>
+        </li>
+        <li>
+            <a href="/backups" class="{% if request.path == '/backups' %}active{% endif %}">
+                <i class="ti ti-database"></i> Backups
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+
+    <div class="sidebar-support">
+        <hr class="support-divider">
+        <div class="support-section-label">Support</div>
+        <div class="support-email-row">
+            <i class="ti ti-mail"></i>
+            <div>
+                <span class="support-email-title">Email Support</span>
+                <span class="support-email-addr">support.blueledgerai@gmail.com</span>
+            </div>
+        </div>
+        <button class="support-chat-btn" onclick="toggleChat()">
+            <i class="ti ti-robot"></i>
+            <span>AI Assistant</span>
+            <span class="support-chat-dot"></span>
+        </button>
+    </div>
+</div>

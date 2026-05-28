@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>System Error</title>
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="main-content">
+
+    <div class="glass-card">
+
+        <h1>⚠ Enterprise System Error</h1>
+
+        <p>
+            An unexpected enterprise system error occurred.
+        </p>
+
+        <p>
+            Error Details:
+        </p>
+
+        <div class="insight-item">
+            {{ error }}
+        </div>
+
+        <br>
+
+        <a href="/dashboard" class="btn">
+            Return Dashboard
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

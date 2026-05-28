@@ -1,0 +1,258 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"></body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Dashboard — BlueLedger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>s
+<body>
+    {% include 'partials/sidebar.html' %}
+    {% include 'partials/chatbot.html' %}
+    
+<div class="main-content">
+    <div class="topbar">
+    <div class="topbar-title-block">
+        <div class="topbar-badge">ENTERPRISE</div>
+        <h1>Financial Dashboard</h1>
+        <p>
+            <strong>Welcome, {{ session.user }}</strong>
+            <span class="topbar-dot">·</span>
+            <span class="topbar-role">{{ session.role|capitalize }}</span>
+            <span class="topbar-dot">·</span>
+            <span class="topbar-workspace">Personal workspace</span>
+        </p>
+    </div>
+        <div class="top-actions">
+    <button type="button" class="dark-btn" onclick="toggleDarkMode()">
+        <i class="ti ti-moon"></i>
+    </button>
+    <div class="profile-wrapper">
+        <div class="profile" onclick="toggleProfile()">
+            <div class="profile-avatar">{{ session.user[0]|upper }}</div>
+            <span>{{ session.user }}</span>
+            <i class="ti ti-chevron-down profile-caret"></i>
+        </div>
+        <div class="profile-dropdown" id="profileDropdown">
+            <div class="profile-dropdown-header">
+                <div class="profile-dropdown-avatar">{{ session.user[0]|upper }}</div>
+                <div>
+                    <div class="profile-dropdown-name">{{ session.user }}</div>
+                    <div class="profile-dropdown-role">{{ session.role|capitalize }}</div>
+                </div>
+            </div>
+            <div class="profile-dropdown-divider"></div>
+            <div class="profile-dropdown-item">
+                <i class="ti ti-user"></i>
+                <span>Username</span>
+                <span class="profile-dropdown-val">{{ session.user }}</span>
+            </div>
+            <div class="profile-dropdown-item">
+                <i class="ti ti-shield"></i>
+                <span>Role</span>
+                <span class="profile-dropdown-val">{{ session.role|capitalize }}</span>
+            </div>
+            <div class="profile-dropdown-item">
+                <i class="ti ti-lock"></i>
+                <span>Password</span>
+                <span class="profile-dropdown-val">••••••••</span>
+            </div>
+            <div class="profile-dropdown-divider"></div>
+            <button class="profile-dropdown-changepw" onclick="toggleChangePw()">
+                <i class="ti ti-key"></i> Change Password
+            </button>
+            <a href="/logout" class="profile-dropdown-logout">
+                <i class="ti ti-logout"></i> Logout
+            </a>
+        </div>
+    </div>
+</div>
+    </div>
+
+    {% if high_risk > 0 %}
+    <div class="alert-box">
+        <div class="alert-icon">🚨</div>
+        <div>
+            <h2>AI Risk Alert</h2>
+            <p>{{ high_risk }} high-risk transaction(s) detected in your account.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <p class="section-label">Overview</p>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Expenses</h3>
+            <h2>${{ "%.2f"|format(total_expenses) }}</h2>
+            <p>Your spending</p>
+        </div>
+        <div class="stat-card">
+            <h3>Transactions</h3>
+            <h2>{{ total_transactions }}</h2>
+            <p>Recorded entries</p>
+        </div>
+        <div class="stat-card">
+            <h3>Monthly Budget</h3>
+            <h2>${{ "%.2f"|format(current_budget) }}</h2>
+            <p>Latest allocation</p>
+        </div>
+        <div class="stat-card">
+            <h3>AI Risk Flags</h3>
+            <h2>{{ high_risk }}</h2>
+            <p>Anomalies detected</p>
+        </div>
+    </div>
+
+    <p class="section-label">Enterprise Insights</p>
+    <div class="glass-card">
+        <h2>AI-Powered Insights</h2>
+        {% if insights %}
+            {% for item in insights %}
+            <div class="insight-item">{{ item }}</div>
+            {% endfor %}
+        {% else %}
+            <p>Your dashboard is fresh. Add a budget and expenses to unlock AI insights.</p>
+        {% endif %}
+    </div>
+
+    <p class="section-label">Modules</p>
+    <div class="dashboard-grid">
+        <a class="glass-card" href="{{ url_for('expenses') }}" style="text-decoration:none;color:inherit">
+            <div class="mod-icon">💳</div>
+            <h2>Expense Management</h2>
+            <p>Track transactions with real-time AI risk scoring.</p>
+            <span class="btn">Open</span>
+        </a>
+        <a class="glass-card" href="{{ url_for('budget') }}" style="text-decoration:none;color:inherit">
+            <div class="mod-icon">💰</div>
+            <h2>Budget Planning</h2>
+            <p>Set monthly limits and monitor utilization.</p>
+            <span class="btn">Open</span>
+        </a>
+        <a class="glass-card" href="{{ url_for('ai_risk') }}" style="text-decoration:none;color:inherit">
+            <div class="mod-icon">🤖</div>
+            <h2>AI Risk Prediction</h2>
+            <p>Review flagged anomalies from Isolation Forest.</p>
+            <span class="btn">Open</span>
+        </a>
+        <a class="glass-card" href="{{ url_for('analytics') }}" style="text-decoration:none;color:inherit">
+            <div class="mod-icon">📈</div>
+            <h2>Financial Analytics</h2>
+            <p>Category breakdowns and visual charts.</p>
+            <span class="btn">Open</span>
+        </a>
+        <a class="glass-card" href="{{ url_for('report') }}" style="text-decoration:none;color:inherit">
+            <div class="mod-icon">📄</div>
+            <h2>Enterprise Reports</h2>
+            <p>Download PDF summaries for auditing.</p>
+            <span class="btn">Download</span>
+        </a>
+        {% if session.get('role') == 'manager' %}
+        <a class="glass-card" href="{{ url_for('logs') }}" style="text-decoration:none;color:inherit">
+            <div class="mod-icon">📋</div>
+            <h2>Activity Monitoring</h2>
+            <p>Enterprise audit trail and user actions.</p>
+            <span class="btn">Open</span>
+        </a>
+        <a class="glass-card" href="{{ url_for('backups') }}" style="text-decoration:none;color:inherit">
+            <div class="mod-icon">🗄</div>
+            <h2>Database Backups</h2>
+            <p>Automated recovery snapshots.</p>
+            <span class="btn">Open</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="chart-section">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h2>Spending Overview</h2>
+                <a href="{{ url_for('analytics') }}" class="btn">View Analytics</a>
+            </div>
+            <img src="{{ url_for('static', filename='chart.png') }}" alt="Expense chart" class="chart-image">
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleDarkMode(){
+    document.body.classList.toggle('dark-mode');
+    var btn = document.querySelector('.dark-btn');
+    btn.innerHTML = document.body.classList.contains('dark-mode')
+        ? '<i class="ti ti-sun"></i>'
+        : '<i class="ti ti-moon"></i>';
+}
+
+function toggleChat(){
+    var panel = document.getElementById('chatbotPanel');
+    var backdrop = document.getElementById('chatBackdrop');
+    if(panel.classList.contains('chatbot-open')){
+        panel.classList.remove('chatbot-open');
+        backdrop.classList.remove('chatbot-open');
+    } else {
+        panel.classList.add('chatbot-open');
+        backdrop.classList.add('chatbot-open');
+    }
+}
+
+function toggleProfile(){
+    var dd = document.getElementById('profileDropdown');
+    dd.classList.toggle('open');
+}
+
+document.addEventListener('click', function(e){
+    var wrapper = document.querySelector('.profile-wrapper');
+    if(wrapper && !wrapper.contains(e.target)){
+        document.getElementById('profileDropdown').classList.remove('open');
+    }
+});
+
+function toggleChangePw(){
+    document.getElementById('cpwModal').classList.toggle('open');
+    document.getElementById('cpwBackdrop').classList.toggle('open');
+    document.getElementById('cpwMsg').innerHTML = '';
+    document.getElementById('profileDropdown').classList.remove('open');
+}
+
+function togglePwField(id, btn){
+    var input = document.getElementById(id);
+    if(input.type === 'password'){ input.type = 'text'; btn.textContent = '🙈'; }
+    else { input.type = 'password'; btn.textContent = '👁'; }
+}
+
+function submitChangePw(){
+    var username = document.getElementById('cpwUsername').value.trim();
+    var current  = document.getElementById('cpwCurrent').value.trim();
+    var newpw    = document.getElementById('cpwNew').value.trim();
+    var msg      = document.getElementById('cpwMsg');
+
+    if(!username || !current || !newpw){
+        msg.innerHTML = '<div class="cpw-error">All fields are required.</div>'; return;
+    }
+    if(newpw.length < 6){
+        msg.innerHTML = '<div class="cpw-error">New password must be at least 6 characters.</div>'; return;
+    }
+
+    fetch('/auth/change-password', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: username, current_password: current, new_password: newpw})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.success){
+            msg.innerHTML = '<div class="cpw-success">Password updated! Redirecting to login...</div>';
+            setTimeout(() => { window.location.href = '/logout'; }, 1500);
+        } else {
+            msg.innerHTML = '<div class="cpw-error">' + data.message + '</div>';
+        }
+    });
+}
+</script>
+</body>
+</html>
