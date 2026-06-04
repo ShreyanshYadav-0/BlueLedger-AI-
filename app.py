@@ -61,11 +61,6 @@ def dev_email_enabled():
     return not EMAIL_PASSWORD
 
 
-# EMAIL CONFIG
-EMAIL_ADDRESS = "support.blueledgerai@gmail.com"
-EMAIL_PASSWORD = "qvwdhzyhlvsieond"
-
-
 # IN-MEMORY STORES
 pending_signups = {}
 
