@@ -73,23 +73,14 @@ def generate_otp():
     return str(random.randint(100000, 999999))
 
 def send_email(to, subject, body):
-    if not EMAIL_PASSWORD:
-        raise RuntimeError("EMAIL_PASSWORD is not configured")
-
-    msg = MIMEMultipart()
-
-    msg["From"] = EMAIL_ADDRESS
-    msg["To"] = to
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "html"))
-
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.ehlo()
-    server.starttls()
-    server.ehlo()
-    server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-    server.sendmail(EMAIL_ADDRESS, to, msg.as_string())
-    server.quit()
+    import resend
+    resend.api_key = os.environ.get("RESEND_API_KEY", "")
+    resend.Emails.send({
+        "from": "BlueLedger AI <onboarding@resend.dev>",
+        "to": to,
+        "subject": subject,
+        "html": body
+    })
     print("Email sent successfully to", to)
 
 
