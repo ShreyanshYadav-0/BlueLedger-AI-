@@ -20,6 +20,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 import random
 import string
 import smtplib
+import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -575,12 +576,14 @@ def signup_step1():
     """
 
 
-    try:
-       send_email(email, "BlueLedger — Verify Your Email", body)
-       return jsonify({"success": True, "message": "OTP sent to your email."})
-    except Exception as e:
-       print("Signup Email Error:", e)
-       return jsonify({"success": True, "message": "OTP sent.", "dev_otp": otp})
+    def send_in_background():
+        try:
+            send_email(email, "BlueLedger — Verify Your Email", body)
+        except Exception as e:
+            print("Signup Email Error:", e)
+
+    threading.Thread(target=send_in_background, daemon=True).start()
+    return jsonify({"success": True, "message": "OTP sent to your email."})
 
 
 @app.route("/auth/signup-step2", methods=["POST"])
