@@ -91,33 +91,6 @@ def try_send_email(to, subject, body):
     send_email(to, subject, body)
     return True
 
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = to
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'html'))
-
-    print("EMAIL_ADDRESS =", EMAIL_ADDRESS)
-    print("EMAIL_PASSWORD =", EMAIL_PASSWORD)
-
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.set_debuglevel(1)
-
-    server.ehlo()
-    server.starttls()
-    server.ehlo()
-
-    server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-
-    server.sendmail(
-        EMAIL_ADDRESS,
-        to,
-        msg.as_string()
-    )
-
-    server.quit()
-
-    print("Email sent successfully")
-
 
 def fix_schema(conn):
     cur = conn.cursor()
