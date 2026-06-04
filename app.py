@@ -84,12 +84,19 @@ def send_email(to, subject, body):
     print("Email sent successfully to", to)
 
 
-def try_send_email(to, subject, body):
-    """Send email, or skip in local dev mode when Gmail is not configured."""
-    if dev_email_enabled():
-        return False
-    send_email(to, subject, body)
-    return True
+def send_email(to, subject, body):
+    import ssl
+    msg = MIMEMultipart()
+    msg["From"] = "support.blueledgerai@gmail.com"
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "html"))
+    
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+        server.login("support.blueledgerai@gmail.com", os.environ.get("EMAIL_PASSWORD", ""))
+        server.sendmail("support.blueledgerai@gmail.com", to, msg.as_string())
+    print("Email sent successfully to", to)
 
 
 def fix_schema(conn):
