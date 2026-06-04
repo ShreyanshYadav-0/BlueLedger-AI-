@@ -334,52 +334,6 @@ def login():
         return jsonify({"success": True, "redirect": url_for("dashboard")})
     return redirect(url_for("dashboard"))
 
-def login():
-
-    data = request.get_json()
-
-    username = data.get("username", "").strip()
-    password = data.get("password", "").strip()
-
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        SELECT username, password, role
-        FROM registered_users
-        WHERE username=? OR email=?
-        """,
-        (username, username)
-    )
-
-    user = cur.fetchone()
-
-    conn.close()
-
-    if not user:
-        return jsonify({
-            "success": False,
-            "message": "User not found"
-        })
-
-    db_username = user[0]
-    db_password = user[1]
-    db_role = user[2]
-
-    if password != db_password:
-        return jsonify({
-            "success": False,
-            "message": "Invalid password"
-        })
-
-    session["user"] = db_username
-    session["role"] = db_role
-
-    return jsonify({
-        "success": True,
-        "redirect": "/dashboard"
-    })
 
 
 # DASHBOARD
@@ -628,14 +582,6 @@ def signup_step1():
        print("Signup Email Error:", e)
        return jsonify({"success": True, "message": "OTP sent.", "dev_otp": otp})
 
-    if dev_email_enabled():
-        print(f"\n========== SIGNUP OTP ==========")
-        print(f"Email: {email}")
-        print(f"OTP:   {otp}")
-        print(f"================================\n")
-        return jsonify({"success": True, "dev_otp": otp, "message": "Local mode active."})
-
-    return jsonify({"success": False, "message": "Failed to send OTP email."})
 
 @app.route("/auth/signup-step2", methods=["POST"])
 def signup_step2():
@@ -883,7 +829,6 @@ def chat():
 with app.app_context():
     init_db()
 
-
 if __name__ == "__main__":
 
     init_db()
@@ -891,4 +836,5 @@ if __name__ == "__main__":
     backup_database()
 
     app.run(debug=True)
+
 
