@@ -12,6 +12,14 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from flask import Flask, render_template, request, redirect, session, jsonify, flash
 from werkzeug.security import check_password_hash, generate_password_hash
+import os
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    DATABASE_URL = os.environ.get("DATABASE_URL")
+    USE_POSTGRES = bool(DATABASE_URL)
+except ImportError:
+    USE_POSTGRES = False
 import sqlite3
 from models.ml_model import predict_risk
 from utils.auth import login_required, role_required
@@ -98,6 +106,21 @@ def send_email(to, subject, body):
         server.sendmail("support.blueledgerai@gmail.com", to, msg.as_string())
     print("Email sent successfully to", to)
 
+# existing code above...
+
+def get_db():
+    if USE_POSTGRES:
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    else:
+        conn = sqlite3.connect("database.db")
+        return conn
+
+def get_placeholder():
+    return "%s" if USE_POSTGRES else "?"
+
+def fix_schema(conn):   # this already exists, don't touch it
+    ...
 
 def fix_schema(conn):
     cur = conn.cursor()
@@ -114,65 +137,97 @@ def fix_schema(conn):
 
 # DATABASE
 def init_db():
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cur = conn.cursor()
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS expenses (
-        id INTEGER PRIMARY KEY,
-        username TEXT,
-        amount REAL,
-        category TEXT,
-        date TEXT,
-        risk_status TEXT
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS budgets (
-        id INTEGER PRIMARY KEY,
-        username TEXT,
-        monthly_budget REAL
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS logs (
-        id INTEGER PRIMARY KEY,
-        action TEXT,
-        username TEXT,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS registered_users (
-        id INTEGER PRIMARY KEY,
-        username TEXT UNIQUE,
-        password TEXT,
-        email TEXT UNIQUE,
-        role TEXT DEFAULT 'user'
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS pending_otps (
-       id INTEGER PRIMARY KEY,
-       email TEXT UNIQUE,
-       password TEXT,
-       otp TEXT,
-       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    try:
-        cur.execute("ALTER TABLE expenses ADD COLUMN username TEXT")
-    except:
-        pass
-    try:
-        cur.execute("ALTER TABLE budgets ADD COLUMN username TEXT")
-    except:
-        pass
+    if USE_POSTGRES:
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS expenses (
+            id SERIAL PRIMARY KEY,
+            username TEXT,
+            amount REAL,
+            category TEXT,
+            date TEXT,
+            risk_status TEXT
+        )
+        """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS budgets (
+            id SERIAL PRIMARY KEY,
+            username TEXT,
+            monthly_budget REAL
+        )
+        """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS logs (
+            id SERIAL PRIMARY KEY,
+            action TEXT,
+            username TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS registered_users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE,
+            password TEXT,
+            email TEXT UNIQUE,
+            role TEXT DEFAULT 'user'
+        )
+        """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS pending_otps (
+            id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE,
+            password TEXT,
+            otp TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    else:
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS expenses (
+            id INTEGER PRIMARY KEY,
+            username TEXT,
+            amount REAL,
+            category TEXT,
+            date TEXT,
+            risk_status TEXT
+        )
+        """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS budgets (
+            id INTEGER PRIMARY KEY,
+            username TEXT,
+            monthly_budget REAL
+        )
+        """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS logs (
+            id INTEGER PRIMARY KEY,
+            action TEXT,
+            username TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS registered_users (
+            id INTEGER PRIMARY KEY,
+            username TEXT UNIQUE,
+            password TEXT,
+            email TEXT UNIQUE,
+            role TEXT DEFAULT 'user'
+        )
+        """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS pending_otps (
+            id INTEGER PRIMARY KEY,
+            email TEXT UNIQUE,
+            password TEXT,
+            otp TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
 
     conn.commit()
     conn.close()
@@ -180,23 +235,20 @@ def init_db():
 
 
 def seed_default_users():
-    """Create demo manager/accountant accounts in the database if missing."""
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cur = conn.cursor()
+    p = get_placeholder()
     for username, info in users.items():
-        cur.execute("SELECT id FROM registered_users WHERE username=?", (username,))
+        cur.execute(f"SELECT id FROM registered_users WHERE username={p}", (username,))
         if cur.fetchone():
             continue
         email = f"{username}@blueledger.local"
         cur.execute(
-            """
-            INSERT INTO registered_users (username, password, email, role)
-            VALUES (?, ?, ?, ?)
-            """,
+            f"INSERT INTO registered_users (username, password, email, role) VALUES ({p}, {p}, {p}, {p})",
             (username, generate_password_hash(info["password"]), email, info["role"]),
         )
         cur.execute(
-            "INSERT INTO budgets (username, monthly_budget) VALUES (?, ?)",
+            f"INSERT INTO budgets (username, monthly_budget) VALUES ({p}, {p})",
             (username, 0),
         )
     conn.commit()
@@ -210,17 +262,17 @@ def verify_password(stored_password, provided_password):
 
 
 def provision_new_user(username, role="user"):
-    """Each new user gets an isolated, empty financial workspace."""
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id FROM budgets WHERE username=?", (username,))
+    p = get_placeholder()
+    cur.execute(f"SELECT id FROM budgets WHERE username={p}", (username,))
     if not cur.fetchone():
         cur.execute(
-            "INSERT INTO budgets (username, monthly_budget) VALUES (?, ?)",
+            f"INSERT INTO budgets (username, monthly_budget) VALUES ({p}, {p})",
             (username, 0),
         )
     cur.execute(
-        "INSERT INTO logs (action, username) VALUES (?, ?)",
+        f"INSERT INTO logs (action, username) VALUES ({p}, {p})",
         ("Account provisioned — fresh dashboard", username),
     )
     conn.commit()
@@ -235,14 +287,11 @@ def parse_login_credentials():
 
 
 def authenticate_user(username, password):
-    conn = sqlite3.connect("database.db")
+    conn = get_db()
     cur = conn.cursor()
+    p = get_placeholder()
     cur.execute(
-        """
-        SELECT username, password, role
-        FROM registered_users
-        WHERE username=? OR email=?
-        """,
+        f"SELECT username, password, role FROM registered_users WHERE username={p} OR email={p}",
         (username, username),
     )
     user = cur.fetchone()
@@ -252,11 +301,10 @@ def authenticate_user(username, password):
         if demo and demo["password"] == password:
             return {"username": username, "role": demo["role"]}, None
         return None, "User not found"
-    db_username, db_password, db_role = user
+    db_username, db_password, db_role = user[0], user[1], user[2]
     if not verify_password(db_password, password):
         return None, "Invalid password"
     return {"username": db_username, "role": db_role or "user"}, None
-
 
 # HOME / LOGIN PAGE
 @app.route("/")

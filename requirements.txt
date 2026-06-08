@@ -9,3 +9,5 @@ gunicorn
 flask-mail
 python-dotenv
 Werkzeug>=3.0
+resend
+psycopg2-binary
