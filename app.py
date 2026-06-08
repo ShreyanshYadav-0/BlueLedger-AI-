@@ -133,6 +133,7 @@ def provision_new_user(username, role="user"):
 
 # ─── DATABASE INIT ────────────────────────────────────────────
 def init_db():
+    os.makedirs("backups", exist_ok=True)
     conn = get_db()
     cur = conn.cursor()
     if USE_POSTGRES:
