@@ -1,6 +1,8 @@
 import shutil
 import os
 import ssl
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 try:
     from dotenv import load_dotenv
@@ -41,6 +43,12 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 # USERS
 users = {
@@ -209,6 +217,7 @@ def logout():
 
 @app.route("/l", methods=["POST"])
 @app.route("/login", methods=["POST"])
+@limiter.limit("5 per minute")
 def login():
     username, password, wants_json = parse_login_credentials()
     if not username or not password:
