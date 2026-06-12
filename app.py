@@ -291,6 +291,10 @@ def dashboard():
 def chart():
     return render_template("chart.html")
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
 @app.route("/ai-risk")
 @login_required
 def ai_risk():
