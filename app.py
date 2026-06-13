@@ -23,6 +23,7 @@ import smtplib
 import threading
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from invoice_generator import generate_invoice
 
 try:
     import psycopg2
@@ -313,6 +314,20 @@ def ai_risk():
 @login_required
 def report():
     return send_file("expense_report.pdf", as_attachment=True)
+
+@app.route("/invoice")
+@login_required
+def invoice():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(f"SELECT * FROM expenses WHERE username={p()}", (session["user"],))
+    expenses = cur.fetchall()
+    cur.execute(f"SELECT * FROM budgets WHERE username={p()} ORDER BY id DESC LIMIT 1", (session["user"],))
+    budget = cur.fetchone()
+    conn.close()
+    os.makedirs("invoices", exist_ok=True)
+    path = generate_invoice(session["user"], expenses, budget)
+    return send_file(path, as_attachment=True, download_name=f"BlueLedger_Invoice_{session['user']}.pdf")
 
 @app.route("/expenses", methods=["GET", "POST"])
 @login_required

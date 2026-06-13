@@ -152,6 +152,12 @@
             <p>Download PDF summaries for auditing.</p>
             <span class="btn">Download</span>
         </a>
+        <a class="glass-card" href="{{ url_for('invoice') }}" style="text-decoration:none;color:inherit">
+          <div class="mod-icon">🧾</div>
+          <h2>Invoice Generator</h2>
+          <p>Generate professional PDF invoices with AI risk analysis.</p>
+          <span class="btn">Generate</span>
+        </a>
         {% if session.get('role') == 'manager' %}
         <a class="glass-card" href="{{ url_for('logs') }}" style="text-decoration:none;color:inherit">
             <div class="mod-icon">📋</div>
