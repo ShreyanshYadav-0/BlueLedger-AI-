@@ -44,11 +44,26 @@
             <br><br>
 
             <input
-                type="text"
-                name="category"
-                placeholder="Expense Category"
-                required
-            >
+              type="text"
+              name="category"
+              placeholder="Expense Category"
+              list="category-suggestions"
+              required
+>
+            <datalist id="category-suggestions">
+            <option value="Travel & Transport">
+            <option value="Office Supplies">
+            <option value="Equipment & Hardware">
+            <option value="Software & Subscriptions">
+            <option value="Consulting & Professional Services">
+            <option value="Marketing & Advertising">
+            <option value="Meals & Entertainment">
+            <option value="Utilities & Energy">
+            <option value="Insurance">
+            <option value="Salaries & Wages">
+            <option value="Medical & Healthcare">
+            <option value="Training & Education">
+            </datalist>
 
             <br><br>
 
@@ -77,10 +92,14 @@
         <table width="100%">
 
             <tr>
-                <th>ID</th>
-                <th>Amount</th>
-                <th>Category</th>
-                <th>Date</th>
+              <th>ID</th>
+              <th>Category</th>
+              <th>Date</th>
+              <th>Net Amount</th>
+              <th>VAT Rate</th>
+              <th>VAT Amount</th>
+              <th>Gross Amount</th>
+              <th>AI Risk</th>
             </tr>
 
             {% for expense in data %}
@@ -88,9 +107,12 @@
             <tr>
 
                 <td>{{ expense[0] }}</td>
-                <td>${{ expense[2] }}</td>
                 <td>{{ expense[3] }}</td>
                 <td>{{ expense[4] }}</td>
+                <td>£{{ "%.2f"|format(expense[2]) }}</td>
+                <td>{{ (expense[6] * 100)|int if expense[6] else 20 }}%</td>
+                <td>£{{ "%.2f"|format(expense[7] if expense[7] else 0) }}</td>
+                <td>£{{ "%.2f"|format(expense[8] if expense[8] else expense[2]) }}</td>
                 <td>
 
 {% if expense[5] and "High Risk" in expense[5] %}

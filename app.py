@@ -100,6 +100,31 @@ def generate_password(length=12):
 def generate_otp():
     return str(random.randint(100000, 999999))
 
+def get_vat_rate(category):
+    category = category.lower().strip()
+    zero_rated = ["insurance", "salary", "salaries", "wages", "medical", "healthcare", "education", "training"]
+    reduced_rated = ["utilities", "energy", "electric", "electricity", "gas", "water", "heating"]
+    for word in zero_rated:
+        if word in category:
+            return 0.0
+    for word in reduced_rated:
+        if word in category:
+            return 0.05
+    return 0.20
+
+def calculate_vat(amount, category):
+    rate = get_vat_rate(category)
+    vat_amount = round(amount * rate, 2)
+    net_amount = round(amount, 2)
+    gross_amount = round(amount + vat_amount, 2)
+    return {
+        "net": net_amount,
+        "vat_rate": rate,
+        "vat_amount": vat_amount,
+        "gross": gross_amount,
+        "rate_display": f"{int(rate * 100)}%"
+    }
+
 def verify_password(stored, provided):
     if stored.startswith("pbkdf2:") or stored.startswith("scrypt:"):
         return check_password_hash(stored, provided)
@@ -143,12 +168,16 @@ def provision_new_user(username, role="user"):
 # ─── DATABASE INIT ────────────────────────────────────────────
 def init_db():
     os.makedirs("backups", exist_ok=True)
+    os.makedirs("invoices", exist_ok=True)
     conn = get_db()
     cur = conn.cursor()
     if USE_POSTGRES:
         cur.execute("""CREATE TABLE IF NOT EXISTS expenses (
             id SERIAL PRIMARY KEY, username TEXT, amount REAL,
-            category TEXT, date TEXT, risk_status TEXT)""")
+            category TEXT, date TEXT, risk_status TEXT,
+            vat_rate REAL DEFAULT 0.20,
+            vat_amount REAL DEFAULT 0.00,
+            gross_amount REAL DEFAULT 0.00)""")
         cur.execute("""CREATE TABLE IF NOT EXISTS budgets (
             id SERIAL PRIMARY KEY, username TEXT, monthly_budget REAL)""")
         cur.execute("""CREATE TABLE IF NOT EXISTS logs (
@@ -160,10 +189,20 @@ def init_db():
         cur.execute("""CREATE TABLE IF NOT EXISTS pending_otps (
             id SERIAL PRIMARY KEY, email TEXT UNIQUE, password TEXT,
             otp TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)""")
+        # Add VAT columns to existing tables if not present
+        for col, default in [("vat_rate","0.20"),("vat_amount","0.00"),("gross_amount","0.00")]:
+            try:
+                cur.execute(f"ALTER TABLE expenses ADD COLUMN {col} REAL DEFAULT {default}")
+                conn.commit()
+            except:
+                conn.rollback()
     else:
         cur.execute("""CREATE TABLE IF NOT EXISTS expenses (
             id INTEGER PRIMARY KEY, username TEXT, amount REAL,
-            category TEXT, date TEXT, risk_status TEXT)""")
+            category TEXT, date TEXT, risk_status TEXT,
+            vat_rate REAL DEFAULT 0.20,
+            vat_amount REAL DEFAULT 0.00,
+            gross_amount REAL DEFAULT 0.00)""")
         cur.execute("""CREATE TABLE IF NOT EXISTS budgets (
             id INTEGER PRIMARY KEY, username TEXT, monthly_budget REAL)""")
         cur.execute("""CREATE TABLE IF NOT EXISTS logs (
@@ -175,6 +214,12 @@ def init_db():
         cur.execute("""CREATE TABLE IF NOT EXISTS pending_otps (
             id INTEGER PRIMARY KEY, email TEXT UNIQUE, password TEXT,
             otp TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)""")
+        for col, default in [("vat_rate","0.20"),("vat_amount","0.00"),("gross_amount","0.00")]:
+            try:
+                cur.execute(f"ALTER TABLE expenses ADD COLUMN {col} REAL DEFAULT {default}")
+                conn.commit()
+            except:
+                pass
     conn.commit()
     conn.close()
     seed_default_users()
@@ -244,19 +289,17 @@ def login():
 def dashboard():
     conn = get_db()
     cur = conn.cursor()
-
     cur.execute(f"SELECT SUM(amount) FROM expenses WHERE username={p()}", (session["user"],))
     total_expenses = cur.fetchone()[0] or 0
-
     cur.execute(f"SELECT COUNT(*) FROM expenses WHERE username={p()}", (session["user"],))
     total_transactions = cur.fetchone()[0]
-
     cur.execute(f"SELECT monthly_budget FROM budgets WHERE username={p()} ORDER BY id DESC LIMIT 1", (session["user"],))
     budget = cur.fetchone()
     current_budget = budget[0] if budget else 0
-
     cur.execute(f"SELECT COUNT(*) FROM expenses WHERE username={p()} AND risk_status LIKE {p()}", (session["user"], "%High Risk%"))
     high_risk = cur.fetchone()[0]
+    cur.execute(f"SELECT SUM(vat_amount) FROM expenses WHERE username={p()}", (session["user"],))
+    total_vat = cur.fetchone()[0] or 0
     conn.close()
 
     insights = []
@@ -285,7 +328,8 @@ def dashboard():
         current_budget=current_budget,
         high_risk=high_risk,
         insights=insights,
-        risk_count=high_risk)
+        risk_count=high_risk,
+        total_vat=total_vat)
 
 @app.route("/chart")
 @login_required
@@ -335,15 +379,18 @@ def expenses():
     conn = get_db()
     cur = conn.cursor()
     risk_status = None
+    vat_info = None
     if request.method == "POST":
         try:
             amount = float(request.form["amount"])
             category = request.form["category"]
             date = request.form["date"]
             risk_status = predict_risk(amount)
+            vat_info = calculate_vat(amount, category)
             cur.execute(
-                f"INSERT INTO expenses (username, amount, category, date, risk_status) VALUES ({p()},{p()},{p()},{p()},{p()})",
-                (session["user"], amount, category, date, risk_status))
+                f"INSERT INTO expenses (username, amount, category, date, risk_status, vat_rate, vat_amount, gross_amount) VALUES ({p()},{p()},{p()},{p()},{p()},{p()},{p()},{p()})",
+                (session["user"], amount, category, date, risk_status,
+                 vat_info["vat_rate"], vat_info["vat_amount"], vat_info["gross"]))
             conn.commit()
             cur.execute(f"INSERT INTO logs (action, username) VALUES ({p()},{p()})", ("Added Expense", session["user"]))
             conn.commit()
@@ -353,7 +400,7 @@ def expenses():
     cur.execute(f"SELECT * FROM expenses WHERE username={p()}", (session["user"],))
     data = cur.fetchall()
     conn.close()
-    return render_template("expenses.html", data=data, risk_status=risk_status)
+    return render_template("expenses.html", data=data, risk_status=risk_status, vat_info=vat_info)
 
 @app.route("/budget", methods=["GET", "POST"])
 @login_required
@@ -368,8 +415,10 @@ def budget():
     budget_data = cur.fetchone()
     cur.execute(f"SELECT SUM(amount) FROM expenses WHERE username={p()}", (session["user"],))
     total_expenses = cur.fetchone()[0] or 0
+    cur.execute(f"SELECT SUM(vat_amount) FROM expenses WHERE username={p()}", (session["user"],))
+    total_vat = cur.fetchone()[0] or 0
     conn.close()
-    return render_template("budget.html", budget_data=budget_data, total_expenses=total_expenses)
+    return render_template("budget.html", budget_data=budget_data, total_expenses=total_expenses, total_vat=total_vat)
 
 @app.route("/logs")
 @login_required
@@ -612,12 +661,16 @@ def chat():
             reply = "Budget Planning helps track monthly spending limits."
         elif "expense" in user_msg:
             reply = "Expenses are analyzed automatically by the AI engine."
+        elif "vat" in user_msg or "tax" in user_msg:
+            reply = "VAT is automatically calculated on all expenses based on UK tax rates (0%, 5%, 20%)."
         elif "report" in user_msg:
             reply = "Reports can be downloaded from the Reports module."
         elif "analytics" in user_msg or "chart" in user_msg:
             reply = "Analytics provides category-wise spending insights."
+        elif "invoice" in user_msg:
+            reply = "Generate professional PDF invoices from the Invoice Generator module."
         else:
-            reply = "Hello! I am your BlueLedger AI Assistant."
+            reply = "Hello! I am your BlueLedger AI Assistant. How can I help you today?"
         return jsonify({"reply": reply})
     except Exception as e:
         print("CHAT ROUTE ERROR:", str(e))
