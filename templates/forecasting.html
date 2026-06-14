@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Forecasting — BlueLedger AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% include 'partials/sidebar.html' %}
+{% include 'partials/chatbot.html' %}
+<div class="main-content">
+
+    <div class="topbar">
+        <div class="topbar-title-block">
+            <div class="topbar-badge">AI POWERED</div>
+            <h1>Financial Forecasting</h1>
+            <p><strong>Next Month Prediction</strong>
+                <span class="topbar-dot">·</span>
+                <span class="topbar-workspace">{{ forecast.next_month_label }}</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- FORECAST SUMMARY CARDS -->
+    <p class="section-label">Forecast Overview</p>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Predicted Spend</h3>
+            <h2>£{{ "%.2f"|format(forecast.predicted_amount) }}</h2>
+            <p>{{ forecast.next_month_label }}</p>
+        </div>
+        <div class="stat-card">
+            <h3>Trend</h3>
+            <h2>
+                {% if forecast.trend == "increasing" %}📈
+                {% elif forecast.trend == "decreasing" %}📉
+                {% else %}📊{% endif %}
+                {{ forecast.trend|capitalize }}
+            </h2>
+            <p>{{ forecast.trend_pct }}% vs last month</p>
+        </div>
+        <div class="stat-card">
+            <h3>Confidence</h3>
+            <h2>{{ forecast.confidence|capitalize }}</h2>
+            <p>Based on {{ forecast.monthly_history|length }} months data</p>
+        </div>
+        <div class="stat-card">
+            <h3>vs Budget</h3>
+            {% if budget > 0 %}
+                {% if forecast.predicted_amount > budget %}
+                    <h2 style="color:#dc2626">⚠ Over</h2>
+                    <p>£{{ "%.2f"|format(forecast.predicted_amount - budget) }} over budget</p>
+                {% else %}
+                    <h2 style="color:#16a34a">✅ Under</h2>
+                    <p>£{{ "%.2f"|format(budget - forecast.predicted_amount) }} under budget</p>
+                {% endif %}
+            {% else %}
+                <h2>—</h2>
+                <p>No budget set</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- AI INSIGHT -->
+    <p class="section-label">AI Insight</p>
+    <div class="glass-card">
+        <h2>🤖 AI Forecast Analysis</h2>
+        <div class="insight-item" style="font-size:14px; padding:16px">
+            {{ forecast.insight }}
+        </div>
+    </div>
+
+    <!-- FORECAST CHART -->
+    <p class="section-label">Spending Trend & Forecast</p>
+    <div class="chart-card">
+        <div class="chart-header">
+            <h2>Monthly Spend History + Next Month Prediction</h2>
+        </div>
+        {% if forecast.chart_path %}
+            <img src="{{ url_for('static', filename='forecast_chart.png') }}"
+                 alt="Forecast Chart" class="chart-image"
+                 style="max-height:380px">
+        {% else %}
+            <p style="color:#666; padding:20px">Add more expenses to generate forecast chart.</p>
+        {% endif %}
+    </div>
+
+    <!-- MONTHLY HISTORY -->
+    {% if forecast.monthly_history %}
+    <p class="section-label">Monthly History</p>
+    <div class="glass-card">
+        <h2>Month-by-Month Breakdown</h2>
+        <table width="100%">
+            <tr>
+                <th>Month</th>
+                <th>Total Spent</th>
+                <th>vs Previous</th>
+            </tr>
+            {% set months = forecast.monthly_history.keys()|list %}
+            {% set amounts = forecast.monthly_history.values()|list %}
+            {% for month, amount in forecast.monthly_history.items() %}
+            <tr>
+                <td><strong>{{ month }}</strong></td>
+                <td>£{{ "%.2f"|format(amount) }}</td>
+                <td>
+                    {% set idx = months.index(month) %}
+                    {% if idx == 0 %}
+                        <span style="color:#666">—</span>
+                    {% else %}
+                        {% set prev = amounts[idx-1] %}
+                        {% if amount > prev %}
+                            <span style="color:#dc2626">▲ £{{ "%.2f"|format(amount - prev) }}</span>
+                        {% elif amount < prev %}
+                            <span style="color:#16a34a">▼ £{{ "%.2f"|format(prev - amount) }}</span>
+                        {% else %}
+                            <span style="color:#666">— No change</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            <!-- Forecast row -->
+            <tr style="background: linear-gradient(135deg, #0a1628, #0d2144); color:white">
+                <td><strong>{{ forecast.next_month_label }} (Forecast)</strong></td>
+                <td><strong>£{{ "%.2f"|format(forecast.predicted_amount) }}</strong></td>
+                <td>
+                    {% if forecast.trend == "increasing" %}
+                        <span style="color:#fca5a5">▲ {{ forecast.trend_pct }}% predicted increase</span>
+                    {% elif forecast.trend == "decreasing" %}
+                        <span style="color:#86efac">▼ {{ forecast.trend_pct }}% predicted decrease</span>
+                    {% else %}
+                        <span style="color:#93c5fd">→ Stable</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- CATEGORY FORECAST -->
+    {% if forecast.category_forecast %}
+    <p class="section-label">Category Forecast</p>
+    <div class="glass-card">
+        <h2>Predicted Spend by Category — {{ forecast.next_month_label }}</h2>
+        <table width="100%">
+            <tr>
+                <th>Category</th>
+                <th>Predicted Amount</th>
+                <th>% of Total</th>
+            </tr>
+            {% for cat, amt in forecast.category_forecast.items() %}
+            <tr>
+                <td>{{ cat }}</td>
+                <td>£{{ "%.2f"|format(amt) }}</td>
+                <td>
+                    {% if forecast.predicted_amount > 0 %}
+                        {{ "%.1f"|format((amt / forecast.predicted_amount) * 100) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+</div>
+</body>
+</html>

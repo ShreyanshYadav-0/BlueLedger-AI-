@@ -3,6 +3,7 @@ import os
 import ssl
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from forecasting import forecast_next_month
 
 try:
     from dotenv import load_dotenv
@@ -450,6 +451,20 @@ def analytics():
     plt.savefig("static/chart.png")
     plt.close()
     return render_template("analytics.html")
+
+@app.route("/forecasting")
+@login_required
+def forecasting():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(f"SELECT * FROM expenses WHERE username={p()}", (session["user"],))
+    expenses = cur.fetchall()
+    cur.execute(f"SELECT * FROM budgets WHERE username={p()} ORDER BY id DESC LIMIT 1", (session["user"],))
+    budget = cur.fetchone()
+    conn.close()
+    forecast = forecast_next_month(expenses)
+    budget_val = float(budget[2]) if budget and budget[2] else 0
+    return render_template("forecasting.html", forecast=forecast, budget=budget_val)
 
 @app.route("/backups")
 @login_required
